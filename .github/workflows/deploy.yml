@@ -32,4 +32,4 @@ jobs:
       with:
         app-name: 'myApp8713'
         package: .
-        runtime: 'NODE|18-lts'  # Especifica el runtime
+        resource-group-name: 'myGroup'
