@@ -3,33 +3,55 @@ name: Azure CI/CD
 on:
   push:
     branches: [ "main" ]
-    paths-ignore: [ 'README.md', '**.md' ]  # Ignora cambios en markdown
+    paths-ignore: 
+      - 'README.md'
+      - '**.md'
+
+env:
+  AZURE_WEBAPP_NAME: 'myApp8713'
+  AZURE_RESOURCE_GROUP: 'myGroup'
+  NODE_VERSION: '18.x'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: production  # Opcional: para gestión de entornos
+    environment: production
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4  # Versión actualizada
+      uses: actions/checkout@v4
 
-    - name: Set up Node.js
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v3
       with:
-        node-version: '18.x'  # Usa la versión de Node.js de tu proyecto
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
 
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm install
+        npm run build --if-present
+
+    - name: Zip artifact for deployment
+      run: |
+        zip -r deploy.zip . -x '*.git*' '*.md' 'node_modules/**'
 
     - name: Login to Azure
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Set subscription
+      run: |
+        az account set --subscription "Azure for Students"
+        az webapp config appsettings set \
+          --name ${{ env.AZURE_WEBAPP_NAME }} \
+          --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+          --settings WEBSITE_NODE_DEFAULT_VERSION=${{ env.NODE_VERSION }}
+
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'myApp8713'
-        package: .
-        resource-group-name: 'myGroup'
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
+        package: deploy.zip
