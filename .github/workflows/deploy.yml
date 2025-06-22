@@ -1,0 +1,35 @@
+name: Azure CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore: [ 'README.md', '**.md' ]  # Ignora cambios en markdown
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production  # Opcional: para gestión de entornos
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4  # Versión actualizada
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'  # Usa la versión de Node.js de tu proyecto
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'myApp1234'
+        package: .
+        runtime: 'NODE|18-lts'  # Especifica el runtime
